@@ -3,12 +3,13 @@ import java.util.Date;
 import edu.uci.ics.crawler4j.crawler.Page;
 
 public class DataCollector {
-	Date date = new Date();
-	String content;
-	String POIcontent;
-	double OnDatePrice;
-	double SecondDayPrice;
-	double SevenDayPrice;
+	private int contentEmotion;
+	private Date date = new Date();
+	private String content;
+	private String POIcontent;
+	private double OnDatePrice;
+	private double SecondDayPrice;
+	private double SevenDayPrice;
 	
 	private static DataCollector collector;
 	

@@ -1,31 +1,33 @@
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Pattern;
+import java.sql.Date;
 
 import com.opencsv.CSVWriter;
 
 import edu.uci.ics.crawler4j.crawler.Page;
 import edu.uci.ics.crawler4j.crawler.WebCrawler;
-import edu.uci.ics.crawler4j.parser.BinaryParseData;
-import edu.uci.ics.crawler4j.parser.HtmlParseData;
 import edu.uci.ics.crawler4j.parser.ParseData;
 import edu.uci.ics.crawler4j.url.WebURL;
 
+/*================================================*/
+/*			Author Hongrui Li @2018				 */
+/*			ALL rights reserved					 */
+/*			Email: leehorray@outlook.com			 */
+/*			API from quandl.com 					 */
+/*			API key: xbd_goeN1NDxqBwX_BSx		 */
+/*================================================*/
+
 public class HoorayCrawler extends WebCrawler{
-		 private final static Pattern FILTERS = Pattern.compile(".*(\\.(css|js"
-		 + "|xml|gz))$");
+//		 private final static Pattern FILTERS = Pattern.compile(".*(\\.(css|js"
+//		 + "|xml|gz))$");
 		private static File Fetched = new File("../data/crawl/fetch_NewsSite.csv");  
 		private static File Downloaded = new File("../data/crawl/POI.csv");  
 		private static File Discovered = new File("../data/crawl/urls.csv");  
 		//private final static Pattern FILTERS = Pattern.compile(".*(\\.(html|pdf|png|jpeg|jpg|gif))$");
-		private Writer writer = null;
-	
-		
+
 		 /**
 		 * This method receives two parameters. The first parameter is the page
 		 * in which we have discovered this new url and the second parameter is
@@ -42,7 +44,6 @@ public class HoorayCrawler extends WebCrawler{
 			 String OK = "";
 			 boolean PDownload = false;
 			 String ContentType = referringPage.getContentType();
-			 ParseData content = referringPage.getParseData();
 			 
 			 boolean FILTER = false;
 			 FILTER = validate(ContentType);
@@ -60,7 +61,7 @@ public class HoorayCrawler extends WebCrawler{
 				}
 				PDownload = FILTER;
 				
-			 return PDownload;
+				return PDownload;
 			 }
 		 
 		 /**
@@ -71,12 +72,12 @@ public class HoorayCrawler extends WebCrawler{
 		  public void visit(Page page) {
 			  String ContentType = page.getContentType();
 			  ParseData parseData = page.getParseData();
-			  int OutGoingUrls = parseData.getOutgoingUrls().size();
-	  		  int FileSize = page.getContentData().length;
 			  String url = page.getWebURL().getURL();
 			  int StatusCode = page.getStatusCode();
+			  Date date = Date.valueOf("2018-3-4");
+
 			  String [] Urls = {url, String.valueOf(StatusCode)};
-			  
+
 			        	try {
 			        		Writer writer = new FileWriter(Fetched, true);
 			  			  
@@ -95,37 +96,48 @@ public class HoorayCrawler extends WebCrawler{
 				  if (content.toString().contains("AMZN")) {
 						 POIcontent = content.substring(content.indexOf("AMZN") - 20, content.indexOf("AMZN") + 10);
 						 
+						 try {
+							StockPriceAccess.stockPriceAccessAgent("AMZN", date);
+						} catch (UnsupportedEncodingException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						 
 					 } else if (content.toString().contains("WB")) {
 						 POIcontent = content.substring(content.indexOf("WB") - 20, content.indexOf("WB") + 10);
+						 try {
+								StockPriceAccess.stockPriceAccessAgent("WB", date);
+							} catch (UnsupportedEncodingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 					 }
 				  
 				  	String [] POI = {url, POIcontent, ContentType};
 					 if (POIcontent.length() != 0) {
+						 
+						 DataCollector DC = DataCollector.getCollector(page);	 
+						 DC.setPOIcontent(POIcontent);
+						 
 						 try {
 							 Writer writer = new FileWriter(Downloaded, true);
 				  			  
-							    CSVWriter csvWriter = new CSVWriter(writer);  
-					        		csvWriter.writeNext(POI);  
-					            csvWriter.close();  
+							 CSVWriter csvWriter = new CSVWriter(writer);  
+							 csvWriter.writeNext(POI);  
+					         csvWriter.close();  
 							
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					 }
-					 
-//				  String [] Download = {url, String.valueOf(FileSize), 
-//						  String.valueOf(OutGoingUrls), ContentType};
-//				  try {
-//		        		Writer writer = new FileWriter(Downloaded, true);
-//		  			  
-//				    CSVWriter csvWriter = new CSVWriter(writer);  
-//		        		csvWriter.writeNext(Download);  
-//		            csvWriter.close();  
-//		            
-//					} catch (IOException e) {
-//						System.out.println(e);
-//					}
+
 			  }
 			        	
 			        	
