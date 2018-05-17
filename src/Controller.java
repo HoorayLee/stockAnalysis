@@ -10,7 +10,7 @@ public class Controller {
 		 int numberOfCrawlers = 7;
 		 CrawlConfig config = new CrawlConfig();
 		 config.setCrawlStorageFolder(crawlStorageFolder);
-		 config.setMaxDepthOfCrawling(4);
+		 config.setMaxDepthOfCrawling(3);
 		 config.setMaxPagesToFetch(20000);
 		 /*
 		 * Instantiate the controller for this crawl.
