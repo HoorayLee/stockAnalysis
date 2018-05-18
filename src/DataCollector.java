@@ -1,29 +1,36 @@
 import java.util.Date;
 
-import edu.uci.ics.crawler4j.crawler.Page;
-
 public class DataCollector {
 	private int contentEmotion;
 	private Date date = new Date();
+	private String StockName;
 	private String content;
 	private String POIcontent;
 	private double OnDatePrice;
 	private double SecondDayPrice;
 	private double SevenDayPrice;
 	
-	private static DataCollector collector;
-	
 	//Static factory function VS constructor
-	public static DataCollector getCollector(Page page) {
-		if (page.getContentType().equals("text")) {
+	public static DataCollector getCollector(int type) {
+
+		DataCollector collector = new DataCollector();
+		
+		if (type == 1) {
+			collector.SecondDayPrice = -1;
+			collector.SevenDayPrice = -1;
 			return collector;
-		} else if (page.getLanguage().equals("English")) {
-			return new RecentNews();
+		} else if (type == 2) {
+			collector.SevenDayPrice = -1;
+			return collector;
 		} else {
-			return new PastNews();
+			return collector;
 		}
 		
 		// TODO Add time judge condition in response to the three child classes
+	}
+	
+	public void setDate(Date d) {
+		date = d;
 	}
 	
 	public void setOnDatePrice(double p) {
@@ -42,6 +49,13 @@ public class DataCollector {
 		POIcontent = poi;
 	}
 	
+	public void setStockName(String stock) {
+		StockName = stock;
+	}
+	
+	public Date getDate() {
+		return date;
+	}
 	public double getOnDatePrice() {
 		return OnDatePrice;
 	}
@@ -56,6 +70,10 @@ public class DataCollector {
 	
 	public String getContent() {
 		return content;
+	}
+	
+	public String getStockName() {
+		return StockName;
 	}
 	
 	public String getPOIcontent() {

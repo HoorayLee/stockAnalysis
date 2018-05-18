@@ -4,8 +4,14 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.sql.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
+
+import org.apache.http.Header;
 
 import com.opencsv.CSVWriter;
 
@@ -77,12 +83,31 @@ public class HoorayCrawler extends WebCrawler{
 				StockCheck.put("boeing",0);
 				StockCheck.put("microsoft",0);
 				StockCheck.put("cisco",0);
+				//TODO Threads must share the visited information with each other
 				
 			  String ContentType = page.getContentType();
 			  ParseData parseData = page.getParseData();
+			  Header[] a = page.getFetchResponseHeaders();
+			  Date date = Date.valueOf("2018-5-16");
+
+			  SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy hh:mm:ss");
+			  String timeStamp = dateFormat.format(Calendar.getInstance().getTime());
+			  dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+			  try {
+				Date parsedDate = (Date) dateFormat.parse("Thu, 03 May 2018 21:38:01");
+			} catch (ParseException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			  if (a[2].getName().equals("Last-Modified")) {
+				  String lastM = a[2].getValue();
+				  //Thu, 03 May 2018 21:38:01 GMT
+				  date = Date.valueOf(lastM);
+			  }
 			  String url = page.getWebURL().getURL();
-			  int StatusCode = page.getStatusCode();
-			  Date date = Date.valueOf("2018-3-4");
+			  
+			  DataCollector DC = DataCollector.getCollector(1);	
+			  
 			  //TODO Get the web content issue date.
 			        	
 			  if (validate(ContentType)) {
@@ -95,16 +120,28 @@ public class HoorayCrawler extends WebCrawler{
 					  if (content.toString().toLowerCase().contains(Company[i])) {
 						  flag = content.indexOf(Company[i]);
 						  POIcontent = content.substring(flag - 40, flag + 40);
+						  //TODO Add more features to filter the real POI content
 						  
 						  if (StockCheck.get(Company[i]) == 0) {
 							  
 							  try {
-									StockPriceAccess.stockPriceAccessAgent(StockName.get(Company[i]), date);
+								  StockPriceAccess SPA = StockPriceAccess.stockPriceAccessAgent(StockName.get(Company[i]), date);
+								  
+								//TODO Use Builder to build the object
+								  DC.setPOIcontent(POIcontent);
+								  DC.setContent(content);
+								  DC.setOnDatePrice(SPA.OnDatePriceA);
+								  DC.setOnDatePrice(SPA.SecondDayPriceA);
+								  DC.setOnDatePrice(SPA.SevenDayPriceA);
+								  DC.setDate(date);
+								  DC.setStockName(StockName.get(Company[i]));
+								 
+								  //TODO Use NLP to analyze document emotion
 								} catch (UnsupportedEncodingException e) {
-									// TODO Auto-generated catch block
+						
 									e.printStackTrace();
 								} catch (IOException e) {
-									// TODO Auto-generated catch block
+									
 									e.printStackTrace();
 								}
 							  
@@ -113,39 +150,10 @@ public class HoorayCrawler extends WebCrawler{
 					  }
 				  }
 				  
-				  @Deprecated
-//				  if (content.toString().toLowerCase().contains("amazon")) {
-//						 POIcontent = content.substring(content.indexOf("amazon") - 40, content.indexOf("amazon") + 40);
-//						 
-//						 try {
-//							StockPriceAccess.stockPriceAccessAgent("AMZN", date);
-//						} catch (UnsupportedEncodingException e) {
-//							// TODO Auto-generated catch block
-//							e.printStackTrace();
-//						} catch (IOException e) {
-//							// TODO Auto-generated catch block
-//							e.printStackTrace();
-//						}
-//						 
-//					 } else if (content.toString().toLowerCase().contains("apple")) {
-//						 POIcontent = content.substring(content.indexOf("Apple") - 40, content.indexOf("Apple") + 40);
-//						 try {
-//								StockPriceAccess.stockPriceAccessAgent("AAPL", date);
-//							} catch (UnsupportedEncodingException e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							} catch (IOException e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							}
-//					 }
-				  
-				  	String [] POI = {url, POIcontent, ContentType};
+				  	
 					 if (POIcontent.length() != 0) {
-						 
-						 DataCollector DC = DataCollector.getCollector(page);	 
-						 DC.setPOIcontent(POIcontent);
-						 
+						 String [] POI = {url, POIcontent, ContentType, DC.getStockName(), 
+						  			String.valueOf(DC.getOnDatePrice()), String.valueOf(DC.getSecondDayPrice()), String.valueOf(DC.getSevenDayPrice())};
 						 try {
 							 Writer writer = new FileWriter(POIFile, true);
 				  			  
@@ -154,7 +162,7 @@ public class HoorayCrawler extends WebCrawler{
 					         csvWriter.close();  
 							
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
+							
 							e.printStackTrace();
 						}
 					 }

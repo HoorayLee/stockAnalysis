@@ -25,6 +25,10 @@ public class StockPriceAccess {
 	private static StockPriceAccess SPA;
 	private static File StockPrice = new File("../data/crawl/Price.csv");  
 	
+	public static double OnDatePriceA;
+	public static double SecondDayPriceA;
+	public static double SevenDayPriceA;
+	
 	public static StockPriceAccess stockPriceAccessAgent(String stockName, Date date) throws UnsupportedEncodingException, IOException {
 		
 		//Initialize the request
@@ -46,6 +50,10 @@ public class StockPriceAccess {
 		JSONArray OnDatePrice = arr.getJSONArray(0);
 		JSONArray SecondDayPrice = arr.getJSONArray(1);
 		JSONArray SevenDayPrice = arr.getJSONArray(5);
+		
+		OnDatePriceA = (double)OnDatePrice.get(1);
+		SecondDayPriceA = (double)SecondDayPrice.get(1);
+		SevenDayPriceA = (double)SevenDayPrice.get(1);
 		
 		String[] Prices = {stockName, OnDatePrice.get(1).toString(), SecondDayPrice.get(1).toString(), SevenDayPrice.get(1).toString()};
 		
