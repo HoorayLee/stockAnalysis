@@ -3,13 +3,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.sql.Date;
+//import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.http.Header;
 
@@ -88,28 +90,40 @@ public class HoorayCrawler extends WebCrawler{
 			  String ContentType = page.getContentType();
 			  ParseData parseData = page.getParseData();
 			  Header[] a = page.getFetchResponseHeaders();
-			  Date date = Date.valueOf("2018-5-16");
-
+			  Date onDate = new Date();
+			  Date parsedDate = new Date();
+			  long diff = -1;
+			  
 			  SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy hh:mm:ss");
 			  String timeStamp = dateFormat.format(Calendar.getInstance().getTime());
 			  dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 			  try {
-				Date parsedDate = (Date) dateFormat.parse("Thu, 03 May 2018 21:38:01");
+				onDate = dateFormat.parse(timeStamp);
+				if (a[2].getName().equals("Last-Modified")) {
+					  String lastM = a[2].getValue();
+					  parsedDate = dateFormat.parse(lastM);
+
+					  long diffInMillies = Math.abs(onDate.getTime() - parsedDate.getTime());
+					  diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
+					  //Thu, 03 May 2018 21:38:01 GMT
+				  }
 			} catch (ParseException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			  if (a[2].getName().equals("Last-Modified")) {
-				  String lastM = a[2].getValue();
-				  //Thu, 03 May 2018 21:38:01 GMT
-				  date = Date.valueOf(lastM);
-			  }
+
 			  String url = page.getWebURL().getURL();
+			  DataCollector DC = DataCollector.getCollector(1);
+			 
+			  if (0 < diff && diff < 7) {
+				  
+				  DC = DataCollector.getCollector(2);	
+				  
+			  } else {
+				  
+				  DC = DataCollector.getCollector(3);	
+				  
+			  }
 			  
-			  DataCollector DC = DataCollector.getCollector(1);	
-			  
-			  //TODO Get the web content issue date.
-			        	
 			  if (validate(ContentType)) {
 				  
 				  String content = parseData.toString();
@@ -125,7 +139,7 @@ public class HoorayCrawler extends WebCrawler{
 						  if (StockCheck.get(Company[i]) == 0) {
 							  
 							  try {
-								  StockPriceAccess SPA = StockPriceAccess.stockPriceAccessAgent(StockName.get(Company[i]), date);
+								  StockPriceAccess SPA = StockPriceAccess.stockPriceAccessAgent(StockName.get(Company[i]), parsedDate);
 								  
 								//TODO Use Builder to build the object
 								  DC.setPOIcontent(POIcontent);
@@ -133,7 +147,7 @@ public class HoorayCrawler extends WebCrawler{
 								  DC.setOnDatePrice(SPA.OnDatePriceA);
 								  DC.setOnDatePrice(SPA.SecondDayPriceA);
 								  DC.setOnDatePrice(SPA.SevenDayPriceA);
-								  DC.setDate(date);
+								  DC.setDate(parsedDate);
 								  DC.setStockName(StockName.get(Company[i]));
 								 
 								  //TODO Use NLP to analyze document emotion
