@@ -6,8 +6,11 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 import org.json.*;
 
 import com.opencsv.CSVWriter;
@@ -22,19 +25,37 @@ public class StockPriceAccess {
 	/*			API key: xbd_goeN1NDxqBwX_BSx		 */
 	/*================================================*/
 	
-	private static StockPriceAccess SPA;
+	
 	private static File StockPrice = new File("../data/crawl/Price.csv");  
 	
-	public static double OnDatePriceA;
-	public static double SecondDayPriceA;
-	public static double SevenDayPriceA;
+	private static double OnDatePriceA = 0;
+	private static double SecondDayPriceA = 0;
+	private static double SevenDayPriceA = 0;
 	
-	public static StockPriceAccess stockPriceAccessAgent(String stockName, Date date) throws UnsupportedEncodingException, IOException {
-		
+	public static StockPriceAccess stockPriceAccessAgent(String stockName, Date date, long diffMili) throws UnsupportedEncodingException, IOException {
+		StockPriceAccess SPA = new StockPriceAccess();
 		//Initialize the request
 		//TODO Implement the data filter based on the selected date. Implement the price collecting function.
 		//https://www.quandl.com/api/v3/datasets/EOD/AAPL.json?api_key=xbd_goeN1NDxqBwX_BSx&start_date=2018-01-01
-		String Request = "https://www.quandl.com/api/v3/datasets/EOD/" + stockName + ".json?api_key=xbd_goeN1NDxqBwX_BSx&&start_date=2018-05-01&end_date=2018-05-15";
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		String onDate = sdf.format(date);
+		//TODO Extend the range to 7 days before the certain date.
+		long oneDay = TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS);
+		int daysNum = (int) (diffMili/oneDay);
+		int range = 1;
+		
+		if (1 < daysNum &&  daysNum < 7) {
+			range = daysNum;
+		} else if (daysNum > 6) {
+			range = 7;
+		}
+		
+		date.setTime(date.getTime() + oneDay * range);
+		String endDate = sdf.format(date);
+		int DataLength = 0;
+		
+		String Request = "https://www.quandl.com/api/v3/datasets/EOD/" + stockName + 
+				".json?api_key=xbd_goeN1NDxqBwX_BSx&&start_date=" + onDate + "&end_date=" + endDate;
 		
 		URL url = new URL(Request);
 		
@@ -47,15 +68,24 @@ public class StockPriceAccess {
 		
 		JSONObject obj = new JSONObject(responseStrBuilder.toString());
 		JSONArray arr = obj.getJSONObject("dataset").getJSONArray("data");
-		JSONArray OnDatePrice = arr.getJSONArray(0);
-		JSONArray SecondDayPrice = arr.getJSONArray(1);
-		JSONArray SevenDayPrice = arr.getJSONArray(5);
+		DataLength = arr.length();
+		
+		JSONArray OnDatePrice = arr.getJSONArray(DataLength - 1);
+		//JSONArray SecondDayPrice = new JSONArray();
+		//JSONArray SevenDayPrice = new JSONArray();
 		
 		OnDatePriceA = (double)OnDatePrice.get(1);
-		SecondDayPriceA = (double)SecondDayPrice.get(1);
-		SevenDayPriceA = (double)SevenDayPrice.get(1);
+		if (DataLength < 6) {
+			JSONArray SecondDayPrice = arr.getJSONArray(DataLength - 2);
+			SecondDayPriceA = (double)SecondDayPrice.get(1);
+		} else {
+			JSONArray SecondDayPrice = arr.getJSONArray(DataLength - 2);
+			JSONArray SevenDayPrice = arr.getJSONArray(DataLength - 5);
+			SecondDayPriceA = (double)SecondDayPrice.get(1);
+			SevenDayPriceA = (double)SevenDayPrice.get(1);
+		}
 		
-		String[] Prices = {stockName, OnDatePrice.get(1).toString(), SecondDayPrice.get(1).toString(), SevenDayPrice.get(1).toString()};
+		String[] Prices = {stockName, OnDatePrice.get(1).toString(), String.valueOf(SecondDayPriceA), String.valueOf(SevenDayPriceA)};
 		
 			try {
 		    		Writer writer = new FileWriter(StockPrice, true);
@@ -68,6 +98,19 @@ public class StockPriceAccess {
 		    }
 			
 		return SPA;
+	}
+	
+	
+	public double getOnDatePrice() {
+		return OnDatePriceA;
+	}
+	
+	public double getSecondDayPrice() {
+		return SecondDayPriceA;
+	}
+	
+	public double getSevenDayPrice() {
+		return SevenDayPriceA;
 	}
 	
 	

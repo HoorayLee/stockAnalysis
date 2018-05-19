@@ -36,8 +36,9 @@ public class HoorayCrawler extends WebCrawler{
 		
 		private static File POIFile = new File("../data/crawl/POI.csv");  
 		
-		private static Map<String, Integer> StockCheck = new HashMap<>();
 		private static Map<String, String> StockName = new HashMap<>();
+		boolean cssFollowing = false;
+		Date parsedDate = new Date();
 		
 		private String[] Company = {"apple", "amazon", "boeing", "microsoft", "cisco"};
 		
@@ -58,14 +59,9 @@ public class HoorayCrawler extends WebCrawler{
 		 */
 		 @Override
 		 public boolean shouldVisit(Page referringPage, WebURL url) {
-			 boolean PDownload = false;
 			 String ContentType = referringPage.getContentType();
-			 
-			 boolean FILTER = false;
-			 FILTER = validate(ContentType);
-			 PDownload = FILTER;
-				
-			 return PDownload;
+			
+			 return validate(ContentType);
 		}
 		 
 		 /**
@@ -80,36 +76,35 @@ public class HoorayCrawler extends WebCrawler{
 				StockName.put("microsoft","MSFT");
 				StockName.put("cisco","CSCO");
 				
-				StockCheck.put("apple",0);
-				StockCheck.put("amazon",0);
-				StockCheck.put("boeing",0);
-				StockCheck.put("microsoft",0);
-				StockCheck.put("cisco",0);
 				//TODO Threads must share the visited information with each other
 				
 			  String ContentType = page.getContentType();
 			  ParseData parseData = page.getParseData();
 			  Header[] a = page.getFetchResponseHeaders();
 			  Date onDate = new Date();
-			  Date parsedDate = new Date();
+			  
+			  
 			  long diff = -1;
+			  long diffInMillies = 0; 
 			  
 			  SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy hh:mm:ss");
 			  String timeStamp = dateFormat.format(Calendar.getInstance().getTime());
 			  dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 			  try {
-				onDate = dateFormat.parse(timeStamp);
+				
 				if (a[2].getName().equals("Last-Modified")) {
+					  onDate = dateFormat.parse(timeStamp);
 					  String lastM = a[2].getValue();
 					  parsedDate = dateFormat.parse(lastM);
 
-					  long diffInMillies = Math.abs(onDate.getTime() - parsedDate.getTime());
-					  diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
 					  //Thu, 03 May 2018 21:38:01 GMT
+					  
 				  }
 			} catch (ParseException e1) {
 				e1.printStackTrace();
 			}
+			  diffInMillies = Math.abs(onDate.getTime() - parsedDate.getTime());
+			  diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
 
 			  String url = page.getWebURL().getURL();
 			  DataCollector DC = DataCollector.getCollector(1);
@@ -124,7 +119,7 @@ public class HoorayCrawler extends WebCrawler{
 				  
 			  }
 			  
-			  if (validate(ContentType)) {
+			  if (validate(ContentType) && diffInMillies > 0) {
 				  
 				  String content = parseData.toString();
 				  String POIcontent = new String();
@@ -135,18 +130,16 @@ public class HoorayCrawler extends WebCrawler{
 						  flag = content.indexOf(Company[i]);
 						  POIcontent = content.substring(flag - 40, flag + 40);
 						  //TODO Add more features to filter the real POI content
-						  
-						  if (StockCheck.get(Company[i]) == 0) {
-							  
+
 							  try {
-								  StockPriceAccess SPA = StockPriceAccess.stockPriceAccessAgent(StockName.get(Company[i]), parsedDate);
+								  StockPriceAccess SPA = StockPriceAccess.stockPriceAccessAgent(StockName.get(Company[i]), parsedDate, diffInMillies);
 								  
 								//TODO Use Builder to build the object
 								  DC.setPOIcontent(POIcontent);
 								  DC.setContent(content);
-								  DC.setOnDatePrice(SPA.OnDatePriceA);
-								  DC.setOnDatePrice(SPA.SecondDayPriceA);
-								  DC.setOnDatePrice(SPA.SevenDayPriceA);
+								  DC.setOnDatePrice(SPA.getOnDatePrice());
+								  DC.setSecondDayPrice(SPA.getSecondDayPrice());
+								  DC.setSevenDayPrice(SPA.getSevenDayPrice());
 								  DC.setDate(parsedDate);
 								  DC.setStockName(StockName.get(Company[i]));
 								 
@@ -159,14 +152,12 @@ public class HoorayCrawler extends WebCrawler{
 									e.printStackTrace();
 								}
 							  
-							  StockCheck.put(Company[i], 1);
-						  }
 					  }
 				  }
 				  
 				  	
 					 if (POIcontent.length() != 0) {
-						 String [] POI = {url, POIcontent, ContentType, DC.getStockName(), 
+						 String [] POI = {url, POIcontent, ContentType, DC.getStockName(), DC.getDate().toString(),
 						  			String.valueOf(DC.getOnDatePrice()), String.valueOf(DC.getSecondDayPrice()), String.valueOf(DC.getSevenDayPrice())};
 						 try {
 							 Writer writer = new FileWriter(POIFile, true);
@@ -193,7 +184,11 @@ public class HoorayCrawler extends WebCrawler{
 			 if (ContentType != null) {
 				 if (ContentType.contains("text/html")) {
 					 FILTER = true;
-				 } 
+				 } else if (ContentType.contains("text/css")) {
+					 cssFollowing = true;
+				 } else {
+					 cssFollowing = false;
+				 }
 			 }
 			 
 			 return FILTER;

@@ -45,7 +45,7 @@ public class Controller {
 		 */
 		 controller.addSeed("https://www.bloomberg.com/");
 		 
-		 String [] header = {"URL", "POIContent", "Content type", "Stock name", 
+		 String [] header = {"URL", "POIContent", "Content type", "Stock name", "Date", 
 		  			"On date price", "Second day price", "Seven day price"};
 		  try {
 				 Writer writer = new FileWriter(POIFile, true);

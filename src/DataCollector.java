@@ -33,12 +33,16 @@ public class DataCollector {
 		date = d;
 	}
 	
-	public void setOnDatePrice(double p) {
+	void setOnDatePrice(double p) {
 		OnDatePrice = p;
 	}
 	
 	public void setSecondDayPrice(double p) {
 		SecondDayPrice = p;
+	}
+	
+	public void setSevenDayPrice(double p) {
+		SevenDayPrice = p;
 	}
 	
 	public void setContent(String c) {
@@ -56,6 +60,7 @@ public class DataCollector {
 	public Date getDate() {
 		return date;
 	}
+	
 	public double getOnDatePrice() {
 		return OnDatePrice;
 	}
