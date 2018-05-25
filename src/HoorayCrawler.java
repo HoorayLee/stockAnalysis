@@ -107,17 +107,19 @@ public class HoorayCrawler extends WebCrawler{
 			  diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
 
 			  String url = page.getWebURL().getURL();
-			  DataCollector DC = DataCollector.getCollector(1);
-			 
-			  if (0 < diff && diff < 7) {
-				  
-				  DC = DataCollector.getCollector(2);	
-				  
-			  } else {
-				  
-				  DC = DataCollector.getCollector(3);	
-				  
-			  }
+			  
+			  //Using the builder pattern to build the object
+			  DataCollector DC = new DataCollector.Builder("").build();
+//			 
+//			  if (0 < diff && diff < 7) {
+//				  
+//				  DC = DataCollector.getCollector(2);	
+//				  
+//			  } else {
+//				  
+//				  DC = DataCollector.getCollector(3);	
+//				  
+//			  }
 			  
 			  if (validate(ContentType) && diffInMillies > 0) {
 				  
@@ -134,14 +136,24 @@ public class HoorayCrawler extends WebCrawler{
 							  try {
 								  StockPriceAccess SPA = StockPriceAccess.stockPriceAccessAgent(StockName.get(Company[i]), parsedDate, diffInMillies);
 								  
-								//TODO Use Builder to build the object
-								  DC.setPOIcontent(POIcontent);
-								  DC.setContent(content);
-								  DC.setOnDatePrice(SPA.getOnDatePrice());
-								  DC.setSecondDayPrice(SPA.getSecondDayPrice());
-								  DC.setSevenDayPrice(SPA.getSevenDayPrice());
-								  DC.setDate(parsedDate);
-								  DC.setStockName(StockName.get(Company[i]));
+								// Use Builder to build the object
+								  DC = new DataCollector.Builder(StockName.get(Company[i]))
+										  .Content(content)
+										  .POIContent(POIcontent)
+										  .OnDatePrice(SPA.getOnDatePrice())
+										  .SecondDayPrice(SPA.getSecondDayPrice())
+										  .SevenDayPrice(SPA.getSevenDayPrice())
+										  .setDate(parsedDate)
+										  .build();
+								  
+								  //Deprecated. Build the object with constructor
+//								  DC.setPOIcontent(POIcontent);
+//								  DC.setContent(content);
+//								  DC.setOnDatePrice(SPA.getOnDatePrice());
+//								  DC.setSecondDayPrice(SPA.getSecondDayPrice());
+//								  DC.setSevenDayPrice(SPA.getSevenDayPrice());
+//								  DC.setDate(parsedDate);
+//								  DC.setStockName(StockName.get(Company[i]));
 								 
 								  //TODO Use NLP to analyze document emotion
 								} catch (UnsupportedEncodingException e) {
